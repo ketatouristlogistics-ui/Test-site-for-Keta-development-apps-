@@ -1,0 +1,590 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.app { min-height: 600px; background: var(--color-background-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.screen { display: none; padding: 24px; }
+.screen.active { display: block; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 20px; margin-bottom: 14px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; margin-bottom: 8px; transition: background 0.15s; }
+.btn:hover { background: var(--color-background-secondary); }
+.btn-primary { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+.btn-primary:hover { background: #0F6E56; border-color: #0F6E56; }
+.btn-danger { background: #E24B4A; color: #fff; border-color: #E24B4A; }
+.btn-sm { padding: 7px 14px; font-size: 13px; width: auto; margin-bottom: 0; }
+input[type=text], input[type=number], select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-size: 14px; margin-bottom: 10px; }
+.header { background: #1D9E75; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+.header h1 { font-size: 18px; font-weight: 500; color: #fff; }
+.header p { font-size: 12px; opacity: 0.85; color: #fff; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; background: #E1F5EE; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 500; color: #085041; flex-shrink: 0; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge-green { background: #E1F5EE; color: #085041; }
+.badge-blue { background: #E6F1FB; color: #0C447C; }
+.badge-amber { background: #FAEEDA; color: #633806; }
+.label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; font-weight: 500; }
+.passage-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 16px; font-size: 15px; line-height: 1.8; color: var(--color-text-primary); margin-bottom: 14px; border: 0.5px solid var(--color-border-tertiary); }
+.passage-box .word { display: inline; }
+.passage-box .word.active { background: #FAEEDA; color: #412402; border-radius: 3px; padding: 0 2px; }
+.passage-box .word.correct { background: #EAF3DE; color: #173404; border-radius: 3px; padding: 0 2px; }
+.passage-box .word.wrong { background: #FCEBEB; color: #501313; border-radius: 3px; padding: 0 2px; }
+.mic-btn { width: 72px; height: 72px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 28px; margin: 0 auto 12px; transition: all 0.2s; }
+.mic-btn.idle { background: #E6F1FB; color: #185FA5; }
+.mic-btn.listening { background: #E24B4A; color: #fff; animation: pulse 1s infinite; }
+.mic-btn.processing { background: #FAEEDA; color: #854F0B; }
+@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+.ai-bubble { background: #E1F5EE; border-radius: 0 12px 12px 12px; padding: 12px 16px; font-size: 14px; color: #085041; margin-bottom: 12px; line-height: 1.6; border: 0.5px solid #9FE1CB; }
+.user-bubble { background: var(--color-background-secondary); border-radius: 12px 0 12px 12px; padding: 12px 16px; font-size: 14px; color: var(--color-text-primary); margin-bottom: 12px; line-height: 1.6; text-align: right; border: 0.5px solid var(--color-border-tertiary); }
+.stars { font-size: 28px; text-align: center; letter-spacing: 4px; margin: 12px 0; }
+.progress-bar { height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; background: #1D9E75; border-radius: 3px; transition: width 0.4s; }
+.tab-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab { padding: 7px 14px; border-radius: var(--border-radius-md); font-size: 13px; cursor: pointer; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); }
+.tab.active { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+.child-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.child-row:last-child { border-bottom: none; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.listening-indicator { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 13px; color: #E24B4A; font-weight: 500; margin-bottom: 8px; }
+.wave { display: flex; gap: 3px; align-items: center; }
+.wave span { display: block; width: 3px; border-radius: 2px; background: #E24B4A; animation: wave 0.8s ease-in-out infinite; }
+.wave span:nth-child(2){animation-delay:0.1s;}
+.wave span:nth-child(3){animation-delay:0.2s;}
+.wave span:nth-child(4){animation-delay:0.3s;}
+@keyframes wave { 0%,100%{height:4px;} 50%{height:16px;} }
+.typing-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #085041; margin: 0 2px; animation: dot 1.2s infinite; }
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dot { 0%,80%,100%{opacity:0.2;} 40%{opacity:1;} }
+.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.score-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; text-align: center; }
+.score-card .num { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.score-card .lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+</style>
+
+<h2 class="sr-only">ReadKeta — AI-powered literacy learning app for children in Keta, Volta Region, Ghana</h2>
+
+<div class="app" id="app">
+  <div class="header">
+    <div style="font-size:28px;">📚</div>
+    <div>
+      <h1>ReadKeta</h1>
+      <p>Literacy learning for children in Keta, Volta Region</p>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: Home -->
+  <div class="screen active" id="screen-home">
+    <div style="text-align:center; padding: 12px 0 20px;">
+      <div style="font-size:48px; margin-bottom:8px;">🌟</div>
+      <p style="font-size:15px; font-weight:500; color:var(--color-text-primary); margin-bottom:4px;">Welcome to ReadKeta</p>
+      <p style="font-size:13px; color:var(--color-text-secondary);">Learn to read, speak, and understand</p>
+    </div>
+    <button class="btn btn-primary" onclick="showScreen('screen-register')">➕ Register new child</button>
+    <button class="btn" onclick="showScreen('screen-select')">▶ Start a lesson</button>
+    <button class="btn" onclick="showScreen('screen-progress')">📊 View progress reports</button>
+    <div class="card" style="margin-top:8px;">
+      <p class="label">Registered children</p>
+      <div id="home-child-list"><p style="font-size:13px;color:var(--color-text-secondary);">No children registered yet.</p></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Register -->
+  <div class="screen" id="screen-register">
+    <p style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:16px;">Register a child</p>
+    <div class="label">Child's name</div>
+    <input type="text" id="reg-name" placeholder="e.g. Kofi Mensah" />
+    <div class="label">Age</div>
+    <input type="number" id="reg-age" placeholder="e.g. 8" min="4" max="16" />
+    <div class="label">Class / Grade</div>
+    <select id="reg-grade">
+      <option value="1">Primary 1</option>
+      <option value="2">Primary 2</option>
+      <option value="3" selected>Primary 3</option>
+      <option value="4">Primary 4</option>
+      <option value="5">Primary 5</option>
+      <option value="6">Primary 6</option>
+    </select>
+    <div class="label">Reading level</div>
+    <select id="reg-level">
+      <option value="beginner">Beginner — just starting to read</option>
+      <option value="early" selected>Early reader — knows some words</option>
+      <option value="developing">Developing — reads simple sentences</option>
+    </select>
+    <button class="btn btn-primary" onclick="registerChild()" style="margin-top:8px;">✓ Register child</button>
+    <button class="btn" onclick="showScreen('screen-home')">← Back</button>
+  </div>
+
+  <!-- SCREEN 3: Select child -->
+  <div class="screen" id="screen-select">
+    <p style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:16px;">Who is learning today?</p>
+    <div id="child-select-list"><p style="font-size:13px;color:var(--color-text-secondary);">No children registered yet. Please register first.</p></div>
+    <button class="btn" onclick="showScreen('screen-home')" style="margin-top:8px;">← Back</button>
+  </div>
+
+  <!-- SCREEN 4: Lesson -->
+  <div class="screen" id="screen-lesson">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div class="avatar" id="lesson-avatar">K</div>
+      <div>
+        <p style="font-size:14px;font-weight:500;color:var(--color-text-primary);" id="lesson-child-name">Kofi</p>
+        <p style="font-size:12px;color:var(--color-text-secondary);" id="lesson-badge-area"></p>
+      </div>
+      <div style="margin-left:auto;">
+        <div class="progress-bar" style="width:80px;"><div class="progress-fill" id="lesson-progress" style="width:0%"></div></div>
+        <p style="font-size:11px;color:var(--color-text-secondary);text-align:right;margin-top:2px;" id="lesson-step-label">Step 0/5</p>
+      </div>
+    </div>
+    <div id="lesson-area"></div>
+    <button class="btn" onclick="endLesson()" style="margin-top:8px; font-size:12px;">✕ End lesson</button>
+  </div>
+
+  <!-- SCREEN 5: Progress -->
+  <div class="screen" id="screen-progress">
+    <p style="font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:14px;">Progress reports</p>
+    <div id="progress-area"><p style="font-size:13px;color:var(--color-text-secondary);">No progress recorded yet.</p></div>
+    <button class="btn" onclick="showScreen('screen-home')" style="margin-top:8px;">← Back</button>
+  </div>
+</div>
+
+<script>
+const LESSONS = [
+  {
+    id: 'l1',
+    title: 'The River and the Fish',
+    level: 'beginner',
+    passage: 'The fish swam in the river. The water was clear and cool. A bird sat on a big rock. The bird saw the fish. The fish swam away fast.',
+    questions: [
+      { q: 'Where did the fish swim?', a: 'river', hint: 'Think about where fish live — in the river!' },
+      { q: 'What did the bird sit on?', a: 'rock', hint: 'The bird found a big rocky place to sit.' },
+      { q: 'Why did the fish swim away?', a: 'scared', hint: 'The fish was afraid of the bird watching it.' }
+    ]
+  },
+  {
+    id: 'l2',
+    title: 'Market Day',
+    level: 'early',
+    passage: 'Every Friday is market day in our town. Mama wakes up early to sell tomatoes and pepper. Many people come from near and far. Children carry baskets on their heads. The market is loud and busy.',
+    questions: [
+      { q: 'When is market day?', a: 'friday', hint: 'It happens once a week — on which day?' },
+      { q: 'What does Mama sell?', a: 'tomatoes', hint: 'She sells red vegetables — tomatoes and pepper.' },
+      { q: 'What do the children carry?', a: 'baskets', hint: 'They carry them on their heads!' }
+    ]
+  },
+  {
+    id: 'l3',
+    title: 'The Fisherman of Keta',
+    level: 'developing',
+    passage: 'Old Kwesi was the best fisherman in Keta. Each morning he rowed his canoe far into the sea. He knew the winds and the tides like old friends. When the nets came up full, children ran to the shore to help carry the catch. Kwesi always shared his fish with those who had none.',
+    questions: [
+      { q: 'What was Kwesi known for in Keta?', a: 'fishing', hint: 'He was the best at his work — what was his job?' },
+      { q: 'What did Kwesi know well like old friends?', a: 'winds', hint: 'He understood the weather and the sea very well.' },
+      { q: 'What did Kwesi do with extra fish?', a: 'shared', hint: 'He was kind and gave fish to people who had none.' }
+    ]
+  }
+];
+
+let children = JSON.parse(localStorage.getItem('rk_children') || '[]');
+let currentChild = null;
+let currentLesson = null;
+let lessonState = {};
+let recognition = null;
+let isListening = false;
+let conversationHistory = [];
+
+function saveChildren() {
+  try { localStorage.setItem('rk_children', JSON.stringify(children)); } catch(e) {}
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-home') renderHomeList();
+  if (id === 'screen-select') renderSelectList();
+  if (id === 'screen-progress') renderProgress();
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function registerChild() {
+  const name = document.getElementById('reg-name').value.trim();
+  const age = document.getElementById('reg-age').value;
+  const grade = document.getElementById('reg-grade').value;
+  const level = document.getElementById('reg-level').value;
+  if (!name || !age) { alert('Please enter the child\'s name and age.'); return; }
+  const child = { id: Date.now(), name, age, grade, level, sessions: [], completedLessons: [] };
+  children.push(child);
+  saveChildren();
+  document.getElementById('reg-name').value = '';
+  document.getElementById('reg-age').value = '';
+  alert(`${name} has been registered! They can now start learning.`);
+  showScreen('screen-home');
+}
+
+function renderHomeList() {
+  const el = document.getElementById('home-child-list');
+  if (!children.length) { el.innerHTML = '<p style="font-size:13px;color:var(--color-text-secondary);">No children registered yet.</p>'; return; }
+  el.innerHTML = children.map(c => `
+    <div class="child-row">
+      <div class="avatar" style="width:32px;height:32px;font-size:13px;">${getInitials(c.name)}</div>
+      <div style="flex:1;">
+        <p style="font-size:14px;font-weight:500;color:var(--color-text-primary);">${c.name}</p>
+        <p style="font-size:12px;color:var(--color-text-secondary);">Age ${c.age} · Primary ${c.grade} · ${c.sessions.length} sessions</p>
+      </div>
+      <span class="badge badge-green">${c.level}</span>
+    </div>
+  `).join('');
+}
+
+function renderSelectList() {
+  const el = document.getElementById('child-select-list');
+  if (!children.length) { el.innerHTML = '<p style="font-size:13px;color:var(--color-text-secondary);">No children registered yet. Please register first.</p>'; return; }
+  el.innerHTML = children.map(c => `
+    <div class="card" style="cursor:pointer;margin-bottom:10px;" onclick="startLesson(${c.id})">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="avatar">${getInitials(c.name)}</div>
+        <div style="flex:1;">
+          <p style="font-size:15px;font-weight:500;color:var(--color-text-primary);">${c.name}</p>
+          <p style="font-size:12px;color:var(--color-text-secondary);">Age ${c.age} · Primary ${c.grade}</p>
+          <div style="margin-top:6px;"><span class="badge badge-blue">${c.level} reader</span> <span class="badge badge-amber">${c.sessions.length} sessions done</span></div>
+        </div>
+        <span style="font-size:20px; color:#1D9E75;">▶</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function startLesson(childId) {
+  currentChild = children.find(c => c.id === childId);
+  const levelMap = { beginner: 0, early: 1, developing: 2 };
+  const idx = levelMap[currentChild.level] || 0;
+  currentLesson = LESSONS[idx] || LESSONS[0];
+  lessonState = { phase: 'intro', qIndex: 0, score: 0, total: currentLesson.questions.length, readingScore: 0 };
+  conversationHistory = [];
+  document.getElementById('lesson-avatar').textContent = getInitials(currentChild.name);
+  document.getElementById('lesson-child-name').textContent = currentChild.name;
+  document.getElementById('lesson-badge-area').textContent = `${currentLesson.title} · ${currentChild.level}`;
+  showScreen('screen-lesson');
+  renderLessonPhase();
+}
+
+function updateProgress(step, total) {
+  document.getElementById('lesson-progress').style.width = Math.round((step/total)*100) + '%';
+  document.getElementById('lesson-step-label').textContent = `Step ${step}/${total}`;
+}
+
+function renderLessonPhase() {
+  const area = document.getElementById('lesson-area');
+  const totalSteps = 2 + currentLesson.questions.length + 1;
+
+  if (lessonState.phase === 'intro') {
+    updateProgress(0, totalSteps);
+    area.innerHTML = `
+      <div class="ai-bubble">
+        Hello ${currentChild.name}! 🌟 I am your reading teacher today. We are going to read a story called <strong>"${currentLesson.title}"</strong>. Are you ready? Press the button to begin!
+      </div>
+      <button class="btn btn-primary" onclick="startReading()">▶ Start reading lesson</button>
+    `;
+  } else if (lessonState.phase === 'listen') {
+    updateProgress(1, totalSteps);
+    area.innerHTML = `
+      <div class="ai-bubble">Listen carefully while I read the story to you. Follow the words as I read.</div>
+      <div class="passage-box" id="passage-display">${renderPassageWords()}</div>
+      <button class="btn btn-primary" onclick="speakPassage()">🔊 Read story aloud to me</button>
+    `;
+  } else if (lessonState.phase === 'read') {
+    updateProgress(2, totalSteps);
+    area.innerHTML = `
+      <div class="ai-bubble">Now it's your turn! Press the microphone and read the story aloud. Speak clearly!</div>
+      <div class="passage-box" id="passage-display">${renderPassageWords()}</div>
+      <div style="text-align:center;">
+        <button class="mic-btn idle" id="mic-btn" onclick="toggleMic('read')">🎙</button>
+        <div id="mic-status" style="font-size:13px;color:var(--color-text-secondary);">Press to read aloud</div>
+        <div id="transcript-area" style="margin-top:8px;"></div>
+      </div>
+      <button class="btn" onclick="nextPhase()" style="margin-top:10px;">Skip → Go to questions</button>
+    `;
+  } else if (lessonState.phase === 'questions') {
+    const qi = lessonState.qIndex;
+    const q = currentLesson.questions[qi];
+    updateProgress(3 + qi, totalSteps);
+    area.innerHTML = `
+      <div class="ai-bubble">
+        <strong>Question ${qi+1} of ${currentLesson.questions.length}:</strong><br>${q.q}
+        <div id="ai-thinking" style="display:none;margin-top:8px;"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+      </div>
+      <div id="answer-feedback"></div>
+      <div style="text-align:center;">
+        <button class="mic-btn idle" id="mic-btn" onclick="toggleMic('answer')">🎙</button>
+        <div id="mic-status" style="font-size:13px;color:var(--color-text-secondary);">Press to speak your answer</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+        <input type="text" id="text-answer" placeholder="Or type your answer here..." style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter')checkAnswer(document.getElementById('text-answer').value)" />
+        <button class="btn btn-primary btn-sm" onclick="checkAnswer(document.getElementById('text-answer').value)">Submit</button>
+      </div>
+    `;
+    speakQuestion(q.q);
+  } else if (lessonState.phase === 'done') {
+    updateProgress(totalSteps, totalSteps);
+    const pct = Math.round((lessonState.score / lessonState.total) * 100);
+    const stars = pct >= 80 ? '⭐⭐⭐' : pct >= 50 ? '⭐⭐' : '⭐';
+    area.innerHTML = `
+      <div class="ai-bubble">
+        Well done, ${currentChild.name}! You finished the lesson! ${pct >= 80 ? 'Excellent work! 🎉' : pct >= 50 ? 'Good effort! Keep practising! 👍' : 'Keep trying — you are learning! 💪'}
+      </div>
+      <div class="card" style="text-align:center;">
+        <p style="font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;">${currentLesson.title}</p>
+        <div class="stars">${stars}</div>
+        <div class="score-grid">
+          <div class="score-card"><div class="num" style="color:#1D9E75;">${lessonState.score}/${lessonState.total}</div><div class="lbl">Questions correct</div></div>
+          <div class="score-card"><div class="num" style="color:#185FA5;">${pct}%</div><div class="lbl">Score</div></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="showScreen('screen-home')">✓ Finish</button>
+    `;
+    saveSession(pct);
+  }
+}
+
+function renderPassageWords() {
+  return currentLesson.passage.split(' ').map((w,i) => `<span class="word" id="word-${i}">${w} </span>`).join('');
+}
+
+function speakPassage() {
+  if (!('speechSynthesis' in window)) { alert('Text-to-speech not supported in this browser. Try Chrome.'); nextPhase(); return; }
+  const words = currentLesson.passage.split(' ');
+  let i = 0;
+  const display = document.getElementById('passage-display');
+  if (display) display.innerHTML = renderPassageWords();
+  function highlightWord(idx) {
+    document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
+    const el = document.getElementById('word-'+idx);
+    if (el) el.classList.add('active');
+  }
+  const utter = new SpeechSynthesisUtterance(currentLesson.passage);
+  utter.rate = 0.85;
+  utter.pitch = 1.0;
+  utter.onboundary = e => {
+    if (e.name === 'word') { highlightWord(i); i++; }
+  };
+  utter.onend = () => {
+    document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
+    lessonState.phase = 'read';
+    renderLessonPhase();
+  };
+  window.speechSynthesis.speak(utter);
+}
+
+function speakQuestion(text) {
+  if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function startReading() {
+  lessonState.phase = 'listen';
+  renderLessonPhase();
+}
+
+function nextPhase() {
+  if (lessonState.phase === 'read') {
+    lessonState.phase = 'questions';
+    lessonState.qIndex = 0;
+  }
+  renderLessonPhase();
+}
+
+function toggleMic(mode) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    const area = document.getElementById('mic-status');
+    if (area) area.textContent = 'Microphone not supported in this browser. Please type your answer.';
+    return;
+  }
+  if (isListening) {
+    recognition && recognition.stop();
+    isListening = false;
+    return;
+  }
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRec();
+  recognition.lang = 'en-GH';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  const btn = document.getElementById('mic-btn');
+  const status = document.getElementById('mic-status');
+  if (btn) { btn.className = 'mic-btn listening'; btn.textContent = '🔴'; }
+  if (status) status.innerHTML = '<div class="listening-indicator"><div class="wave"><span></span><span></span><span></span><span></span></div> Listening...</div>';
+  isListening = true;
+  recognition.onresult = e => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    if (mode === 'read') {
+      const ta = document.getElementById('transcript-area');
+      if (ta) ta.innerHTML = `<div class="user-bubble" style="font-size:13px;">${transcript}</div>`;
+    } else if (mode === 'answer') {
+      const ta = document.getElementById('text-answer');
+      if (ta) ta.value = transcript;
+    }
+    if (e.results[e.results.length-1].isFinal) {
+      isListening = false;
+      if (btn) { btn.className = 'mic-btn idle'; btn.textContent = '🎙'; }
+      if (status) status.textContent = 'Done! Check your answer below.';
+      if (mode === 'read') evaluateReading(transcript);
+      else if (mode === 'answer') checkAnswer(transcript);
+    }
+  };
+  recognition.onerror = () => {
+    isListening = false;
+    if (btn) { btn.className = 'mic-btn idle'; btn.textContent = '🎙'; }
+    if (status) status.textContent = 'Could not hear clearly. Try again or type below.';
+  };
+  recognition.onend = () => { isListening = false; if (btn && btn.classList.contains('listening')) { btn.className = 'mic-btn idle'; btn.textContent = '🎙'; } };
+  recognition.start();
+}
+
+function evaluateReading(transcript) {
+  const expected = currentLesson.passage.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/);
+  const spoken = transcript.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/);
+  let correct = 0;
+  expected.forEach((w,i) => { if (spoken.includes(w)) correct++; });
+  const pct = Math.round((correct/expected.length)*100);
+  lessonState.readingScore = pct;
+  const area = document.getElementById('transcript-area');
+  if (area) {
+    if (pct >= 80) {
+      area.innerHTML += `<div class="ai-bubble">Excellent reading! You got ${pct}% of the words right! 🌟 Let's move on to the questions.</div>`;
+      setTimeout(() => nextPhase(), 2000);
+    } else if (pct >= 50) {
+      area.innerHTML += `<div class="ai-bubble">Good try! You got ${pct}% of the words. Some words were tricky — that's okay! Let's try the questions now.</div>`;
+      setTimeout(() => nextPhase(), 2500);
+    } else {
+      area.innerHTML += `<div class="ai-bubble">Keep practising! You got ${pct}% of the words. Would you like to try again, or go to the questions?</div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="lessonState.phase='read';renderLessonPhase();">🔁 Try again</button>
+        <button class="btn btn-primary btn-sm" onclick="nextPhase()">→ Go to questions</button>
+      </div>`;
+    }
+  }
+}
+
+async function checkAnswer(userAnswer) {
+  if (!userAnswer || !userAnswer.trim()) return;
+  const q = currentLesson.questions[lessonState.qIndex];
+  const feedback = document.getElementById('answer-feedback');
+  const thinking = document.getElementById('ai-thinking');
+  if (feedback) feedback.innerHTML = `<div class="user-bubble">${userAnswer}</div>`;
+  if (thinking) thinking.style.display = 'block';
+  try {
+    const systemPrompt = `You are a kind, encouraging reading teacher for children aged 6-12 in Keta, Ghana. 
+The child just answered a comprehension question about a reading passage.
+Passage: "${currentLesson.passage}"
+Question: "${q.q}"
+Expected answer concept: "${q.a}"
+Child's answer: "${userAnswer}"
+
+Evaluate if the child's answer shows they understood the key concept (don't require exact wording). 
+Respond with JSON only: {"correct": true/false, "feedback": "your encouraging 1-2 sentence response", "correct_answer": "simple correct answer if wrong"}
+If correct, celebrate warmly. If wrong, be very gentle, give the hint: "${q.hint}", and tell them the answer simply.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: 'Evaluate this answer.' }]
+      })
+    });
+    const data = await response.json();
+    if (thinking) thinking.style.display = 'none';
+    const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(raw);
+    if (result.correct) lessonState.score++;
+    if (feedback) feedback.innerHTML += `<div class="ai-bubble">${result.feedback}</div>`;
+    if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(result.feedback);
+      u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    }
+    setTimeout(() => {
+      lessonState.qIndex++;
+      if (lessonState.qIndex >= currentLesson.questions.length) {
+        lessonState.phase = 'done';
+      } else {
+        lessonState.phase = 'questions';
+      }
+      renderLessonPhase();
+    }, 3500);
+  } catch(e) {
+    if (thinking) thinking.style.display = 'none';
+    const ans = userAnswer.toLowerCase();
+    const correct = ans.includes(q.a) || q.a.includes(ans.split(' ')[0]);
+    if (correct) lessonState.score++;
+    const fb = correct ? `Great answer! Well done! ✓` : `Not quite — ${q.hint}. The answer is: ${q.a}.`;
+    if (feedback) feedback.innerHTML += `<div class="ai-bubble">${fb}</div>`;
+    setTimeout(() => {
+      lessonState.qIndex++;
+      if (lessonState.qIndex >= currentLesson.questions.length) lessonState.phase = 'done';
+      else lessonState.phase = 'questions';
+      renderLessonPhase();
+    }, 3000);
+  }
+}
+
+function saveSession(score) {
+  if (!currentChild) return;
+  const child = children.find(c => c.id === currentChild.id);
+  if (!child) return;
+  child.sessions.push({ date: new Date().toLocaleDateString(), lesson: currentLesson.title, score, reading: lessonState.readingScore });
+  if (!child.completedLessons.includes(currentLesson.id)) child.completedLessons.push(currentLesson.id);
+  if (score >= 80 && child.level === 'beginner') child.level = 'early';
+  else if (score >= 80 && child.level === 'early') child.level = 'developing';
+  saveChildren();
+}
+
+function renderProgress() {
+  const area = document.getElementById('progress-area');
+  if (!children.length || !children.some(c=>c.sessions.length)) {
+    area.innerHTML = '<p style="font-size:13px;color:var(--color-text-secondary);">No sessions recorded yet. Complete a lesson first!</p>';
+    return;
+  }
+  area.innerHTML = children.filter(c=>c.sessions.length).map(c => {
+    const avg = Math.round(c.sessions.reduce((a,s)=>a+s.score,0)/c.sessions.length);
+    const recentSessions = c.sessions.slice(-3).reverse();
+    return `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div class="avatar" style="width:36px;height:36px;font-size:14px;">${getInitials(c.name)}</div>
+          <div style="flex:1;">
+            <p style="font-size:14px;font-weight:500;color:var(--color-text-primary);">${c.name}</p>
+            <p style="font-size:12px;color:var(--color-text-secondary);">Age ${c.age} · Primary ${c.grade}</p>
+          </div>
+          <div style="text-align:right;">
+            <p style="font-size:18px;font-weight:500;color:#1D9E75;">${avg}%</p>
+            <p style="font-size:11px;color:var(--color-text-secondary);">avg score</p>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${avg}%;"></div></div>
+        <p style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;margin-bottom:10px;">${c.sessions.length} sessions · ${c.completedLessons.length} lessons completed · Level: <strong>${c.level}</strong></p>
+        ${recentSessions.map(s=>`
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);">
+            <span>${s.lesson}</span>
+            <span style="color:${s.score>=80?'#1D9E75':s.score>=50?'#854F0B':'#E24B4A'};font-weight:500;">${s.score}%</span>
+            <span>${s.date}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function endLesson() {
+  if (confirm('Are you sure you want to end this lesson? Progress will not be saved.')) {
+    showScreen('screen-home');
+  }
+}
+
+renderHomeList();
+</script>

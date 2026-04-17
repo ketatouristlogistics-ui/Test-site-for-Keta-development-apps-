@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadKeta</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1D9E75">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f4f7f6; }
+        .app { max-width: 500px; margin: 0 auto; min-height: 100vh; background: #fff; position: relative; }
+        .screen { display: none; padding: 24px; }
+        .screen.active { display: block; }
+        .card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; margin-bottom: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        .btn-primary { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+        .header { background: #1D9E75; color: #fff; padding: 20px; display: flex; align-items: center; gap: 12px; }
+        .passage-box { background: #f9f9f9; border-radius: 8px; padding: 16px; font-size: 16px; line-height: 1.6; border: 1px solid #eee; margin-bottom: 15px; }
+        .word.active { background: #FAEEDA; border-radius: 3px; }
+        .mic-btn { width: 80px; height: 80px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 30px; margin: 20px auto; background: #E6F1FB; }
+        .mic-btn.listening { background: #E24B4A; color: #fff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.1);} 100% {transform: scale(1);} }
+        .ai-bubble { background: #E1F5EE; border-radius: 0 12px 12px 12px; padding: 15px; margin-bottom: 12px; color: #085041; }
+        .user-bubble { background: #f0f0f0; border-radius: 12px 0 12px 12px; padding: 15px; margin-bottom: 12px; text-align: right; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div style="font-size:30px;">📚</div>
+        <div>
+            <h1 style="font-size:20px;">ReadKeta</h1>
+            <p style="font-size:12px; opacity:0.9;">Literacy for Keta, Ghana</p>
+        </div>
+    </div>
+
+    <div class="screen active" id="screen-home">
+        <div style="text-align:center; padding: 20px 0;">
+            <div style="font-size:50px;">🌟</div>
+            <h3>Welcome back!</h3>
+        </div>
+        <button class="btn btn-primary" onclick="showScreen('screen-register')">Register Child</button>
+        <button class="btn" onclick="showScreen('screen-select')">Start Lesson</button>
+    </div>
+
+    <div class="screen" id="screen-register">
+        <label>Child's Name</label>
+        <input type="text" id="reg-name" placeholder="Name">
+        <label>Level</label>
+        <select id="reg-level" style="width:100%; padding:12px; margin-bottom:20px;">
+            <option value="beginner">Beginner</option>
+            <option value="early">Early Reader</option>
+            <option value="developing">Developing</option>
+        </select>
+        <button class="btn btn-primary" onclick="registerChild()">Save Child</button>
+    </div>
+
+    <div class="screen" id="screen-select">
+        <h3>Who is learning?</h3>
+        <div id="child-list"></div>
+        <button class="btn" onclick="showScreen('screen-home')">Back</button>
+    </div>
+
+    <div class="screen" id="screen-lesson">
+        <div id="lesson-content"></div>
+        <button class="btn" onclick="showScreen('screen-home')">End Lesson</button>
+    </div>
+</div>
+
+<script>
+    // --- APP DATA ---
+    const LESSONS = [
+        { id: 'l1', title: 'The River', passage: 'The fish swam in the river. The water was clear and cool.', 
+          questions: [{ q: 'Where did the fish swim?', a: 'river', hint: 'In the water!' }] }
+    ];
+
+    let children = JSON.parse(localStorage.getItem('rk_children') || '[]');
+    let activeChild = null;
+    let currentLesson = LESSONS[0];
+    let step = 0;
+
+    // --- NAVIGATION ---
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'screen-select') renderChildren();
+    }
+
+    // --- CORE LOGIC ---
+    function registerChild() {
+        const name = document.getElementById('reg-name').value;
+        const level = document.getElementById('reg-level').value;
+        children.push({ name, level, id: Date.now() });
+        localStorage.setItem('rk_children', JSON.stringify(children));
+        showScreen('screen-home');
+    }
+
+    function renderChildren() {
+        const container = document.getElementById('child-list');
+        container.innerHTML = children.map(c => `
+            <div class="card" onclick="startLesson(${c.id})">
+                <strong>${c.name}</strong> (${c.level})
+            </div>
+        `).join('');
+    }
+
+    function startLesson(id) {
+        activeChild = children.find(c => c.id === id);
+        step = 0;
+        showScreen('screen-lesson');
+        runLesson();
+    }
+
+    function runLesson() {
+        const area = document.getElementById('lesson-content');
+        if (step === 0) {
+            area.innerHTML = `
+                <div class="ai-bubble">Hi ${activeChild.name}! Let's read <b>${currentLesson.title}</b>.</div>
+                <div class="passage-box">${currentLesson.passage}</div>
+                <button class="btn btn-primary" onclick="step++; runLesson();">I'm Ready to Read</button>
+            `;
+        } else if (step === 1) {
+            area.innerHTML = `
+                <div class="ai-bubble">Now, answer this: <b>${currentLesson.questions[0].q}</b></div>
+                <div id="feedback"></div>
+                <button class="mic-btn" id="mic" onclick="toggleMic()">🎙</button>
+                <input type="text" id="manual-answer" placeholder="Or type here...">
+                <button class="btn btn-primary" onclick="checkAnswer(document.getElementById('manual-answer').value)">Submit</button>
+            `;
+        }
+    }
+
+    // --- SMART EVALUATION (Offline-Friendly) ---
+    async function checkAnswer(text) {
+        if (!text) return;
+        const feedback = document.getElementById('feedback');
+        const correctWord = currentLesson.questions[0].a.toLowerCase();
+        
+        // Try local matching first (Fast & Offline)
+        if (text.toLowerCase().includes(correctWord)) {
+            feedback.innerHTML = `<div class="ai-bubble">Correct! Well done! 🎉</div>`;
+        } else {
+            // Fallback for tricky spelling
+            feedback.innerHTML = `<div class="ai-bubble">Close! The answer is <b>${correctWord}</b>. ${currentLesson.questions[0].hint}</div>`;
+        }
+    }
+
+    // --- VOICE RECOGNITION ---
+    let isListening = false;
+    function toggleMic() {
+        const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Speech) return alert("Voice not supported on this device.");
+        
+        const rec = new Speech();
+        const btn = document.getElementById('mic');
+        
+        if (!isListening) {
+            rec.start();
+            isListening = true;
+            btn.classList.add('listening');
+        }
+        
+        rec.onresult = (e) => {
+            const transcript = e.results[0][0].transcript;
+            document.getElementById('manual-answer').value = transcript;
+            checkAnswer(transcript);
+        };
+        
+        rec.onend = () => {
+            isListening = false;
+            btn.classList.remove('listening');
+        };
+    }
+</script>
+</body>
+</html>
