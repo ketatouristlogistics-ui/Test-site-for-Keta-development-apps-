@@ -1,0 +1,1 @@
+I am by no means a coder , am here to learn with the many i am trying to give oportunity to , to at least have a basic understandings of this digital technological revolution , which has left many especially in rural areas behind 
